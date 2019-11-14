@@ -1,3 +1,3 @@
-# Politocean_Analytics
+# Politocean Analytics
 
-This repository is aimed to the Data Science and Analytics group
+This repository is aimed at the Data Science and Analytics group
