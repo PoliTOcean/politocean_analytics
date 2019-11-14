@@ -83,11 +83,12 @@ public:
 
 void Talker::startTalking(Listener &listener)
 {
-    if (listener.isSensorsUpdated())
-    {
-        sensors = listener.sensors;
-        std::cout << "READ" << std::endl;
-    }
+    while (1)
+        if (listener.isSensorsUpdated())
+        {
+            sensors = listener.sensors();
+            std::cout << "READ" << std::endl;
+        }
 }
 
 void Talker::stopTalking()
@@ -107,7 +108,7 @@ int main(int argc, const char *argv[])
 {
     logger::enableLevel(logger::DEBUG);
 
-    MqttClient &subscriber = MqttClient::getInstance(Rov::ATMEGA_ID, Rov::IP_ADDRESS);
+    MqttClient &subscriber = MqttClient::getInstance("PIPPO", Hmi::IP_ADDRESS);
 
     Listener listener;
 
@@ -115,7 +116,7 @@ int main(int argc, const char *argv[])
 
     Talker talker;
 
-    talker.startTalking(publisher, listener);
+    talker.startTalking(listener);
 
     subscriber.wait();
 

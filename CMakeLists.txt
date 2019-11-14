@@ -14,8 +14,6 @@ endif()
 add_subdirectory(politocean_common)
 include_directories(politocean_common/include)
 
-add_subdirectory(libs)
-
 include_directories(include)
 
 add_executable(PolitoceanSensors src/PolitoceanSensors.cpp)
