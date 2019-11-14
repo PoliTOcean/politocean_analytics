@@ -2,6 +2,10 @@
  * @author pettinz
  */
 
+#include <string>
+
+#include <vector>
+
 #include "MqttClient.h"
 #include "Sensor.h"
 #include "PolitoceanConstants.h"
@@ -15,89 +19,37 @@
 
 #include <Reflectables/Vector.hpp>
 
-/***************************************************
- * Listener class for subscriber
- **************************************************/
+#include <fstream>
+#include <csignal>
 
 using namespace Politocean;
 using namespace Politocean::Constants;
 
+std::ofstream file;
+
+void signalHandler(int signum)
+{
+    std::cout << "Interrupt signal (" << signum << ") received." << std::endl;
+
+    if (file.is_open())
+        file.close();
+}
+
+/***************************************************
+ * Listener class for subscriber
+ **************************************************/
+
 class Listener
 {
-    Types::Vector<Sensor<float>> sensors_;
-
-    bool sensorsUpdated_;
-
 public:
-    Listener() : sensorsUpdated_(false)
-    {
-        for (auto sensor_type : sensor_t())
-            sensors_.emplace_back(Sensor<float>(sensor_type, 0));
-    }
-
     std::string action();
 
-    Types::Vector<Sensor<float>> &sensors();
-
     void listenForSensor(Types::Vector<Sensor<float>> sensors);
-
-    bool isSensorsUpdated();
 };
 
 void Listener::listenForSensor(Types::Vector<Sensor<float>> sensors)
 {
-    sensors_ = sensors;
-
-    sensorsUpdated_ = true;
-}
-
-Types::Vector<Sensor<float>> &Listener::sensors()
-{
-    sensorsUpdated_ = false;
-
-    return sensors_;
-}
-
-bool Listener::isSensorsUpdated()
-{
-    return sensorsUpdated_;
-}
-
-/***************************************************
- * Talker class for sensors
- **************************************************/
-
-class Talker
-{
-    bool isTalking_;
-    Types::Vector<Sensor<float>> sensors;
-
-public:
-    Talker() : isTalking_(false) {}
-
-    void startTalking(Listener &listener);
-    void stopTalking();
-
-    bool isTalking();
-};
-
-void Talker::startTalking(Listener &listener)
-{
-    while (1)
-        if (listener.isSensorsUpdated())
-        {
-            sensors = listener.sensors();
-            std::cout << "READ" << std::endl;
-        }
-}
-
-void Talker::stopTalking()
-{
-}
-
-bool Talker::isTalking()
-{
-    return isTalking_;
+    file << sensors.stringify() << std::endl;
 }
 
 /***************************************************
@@ -106,21 +58,22 @@ bool Talker::isTalking()
 
 int main(int argc, const char *argv[])
 {
-    logger::enableLevel(logger::DEBUG);
+    signal(SIGINT, signalHandler);
+
+    if (argc < 2)
+    {
+        std::cout << "No file found." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    file.open(std::string(argv[1]));
 
     MqttClient &subscriber = MqttClient::getInstance("PIPPO", Hmi::IP_ADDRESS);
 
     Listener listener;
 
     subscriber.subscribeTo(Topics::SENSORS, &Listener::listenForSensor, &listener);
-
-    Talker talker;
-
-    talker.startTalking(listener);
-
     subscriber.wait();
-
-    talker.stopTalking();
 
     return 0;
 }
